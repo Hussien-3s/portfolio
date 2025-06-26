@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         .hamburger.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -7px);
+            transform: rotate(-45deg) translate(5px, -5px);
         }
     `;
     document.head.appendChild(style);
