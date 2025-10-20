@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>حاسب الوجبات والسعرات — صفحة واحدة</title>
+  <style>
+    :root{--bg:#fff;--fg:#0a0a0a;--muted:#666}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{margin:0;background:var(--bg);color:var(--fg);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+    .card{width:100%;max-width:980px;border-radius:12px;box-shadow:0 6px 30px rgba(10,10,10,0.06);overflow:hidden;border:1px solid rgba(10,10,10,0.06)}
+    header{padding:18px 22px;border-bottom:1px solid rgba(10,10,10,0.06);display:flex;gap:16px;align-items:center;justify-content:space-between}
+    header h1{margin:0;font-size:18px}
+    .controls{display:flex;gap:12px;align-items:center}
+    .input, .small{background:transparent;border:1px solid var(--fg);color:var(--fg);padding:8px 10px;border-radius:8px}
+    .small{padding:6px 8px;font-size:13px}
+    main{display:grid;grid-template-columns:1fr 360px;gap:18px;padding:18px}
+    .left{padding:8px}
+    .form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    .field{background:#fff;border:1px solid #111;padding:10px;border-radius:10px}
+    .btn{background:var(--fg);color:var(--bg);border:none;padding:10px 12px;border-radius:10px;cursor:pointer}
+    .meals{margin-top:8px}
+    .meal{display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed rgba(0,0,0,0.06);padding:10px 6px}
+    .meal .meta{display:flex;gap:12px;align-items:center}
+    .meta .kcal{font-weight:700}
+    .summary{padding:12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:transparent}
+    .stat{display:flex;justify-content:space-between;margin:8px 0;align-items:center}
+    .bar{height:10px;background:transparent;border-radius:999px;overflow:hidden;border:1px solid rgba(0,0,0,0.06)}
+    .bar > i{display:block;height:100%;background:linear-gradient(90deg,#000,#000);}
+    .muted{color:var(--muted);font-size:13px}
+    .trash{cursor:pointer;border-radius:6px;padding:6px}
+    footer{padding:12px 18px;border-top:1px solid rgba(10,10,10,0.04);display:flex;justify-content:space-between;align-items:center}
+    .small-note{font-size:13px;color:var(--muted)}
+    @media (max-width:880px){main{grid-template-columns:1fr;}
+      .controls{flex-wrap:wrap}
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="application">
+    <header>
+      <h1>حاسب الوجبات والسعرات — أبيض و أسود</h1>
+      <div class="controls">
+        <input id="dailyCalories" class="input small" type="number" placeholder="سعرات يومية" title="سعرات هدفية" aria-label="يومية" value="2170">
+        <input id="dailyProtein" class="input small" type="number" placeholder="بروتين (جم)" value="163">
+        <input id="dailyCarb" class="input small" type="number" placeholder="كارب (جم)" value="217">
+        <input id="dailyFat" class="input small" type="number" placeholder="دهون (جم)" value="72">
+        <button id="resetBtn" class="btn small">تفريغ</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="left">
+        <div class="form">
+          <div>
+            <label>اسم الوجبة</label>
+            <input id="mealName" class="field" placeholder="مثال: فطار" />
+          </div>
+          <div>
+            <label>الكمية/ملاحظة</label>
+            <input id="mealNote" class="field" placeholder="مثال: 1 صحن" />
+          </div>
+          <div>
+            <label>سعرات (kcal)</label>
+            <input id="mealKcal" class="field" type="number" placeholder="مثال: 450" />
+          </div>
+          <div>
+            <label>بروتين (جم)</label>
+            <input id="mealProtein" class="field" type="number" placeholder="مثال: 30" />
+          </div>
+          <div>
+            <label>كارب (جم)</label>
+            <input id="mealCarb" class="field" type="number" placeholder="مثال: 50" />
+          </div>
+          <div>
+            <label>دهون (جم)</label>
+            <input id="mealFat" class="field" type="number" placeholder="مثال: 12" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button id="addMeal" class="btn">أضف الوجبة</button>
+          <button id="quickCalc" class="btn" style="background:transparent;color:var(--fg);border:1px solid var(--fg)">حساب من الماكروز</button>
+        </div>
+
+        <div class="meals" id="mealsList">
+          <!-- وجبات ستظهر هنا -->
+        </div>
+      </section>
+
+      <aside>
+        <div class="summary">
+          <h3>ملخص اليوم</h3>
+          <div class="stat"><div class="muted">سعرات مستهدفة</div><div id="targetKcal">0 kcal</div></div>
+          <div class="stat"><div class="muted">مستهلك</div><div id="consumedKcal">0 kcal</div></div>
+          <div class="bar" aria-hidden="true"><i id="kcalBar" style="width:0%"></i></div>
+
+          <hr style="margin:10px 0;border:none;border-top:1px solid rgba(0,0,0,0.04)">
+
+          <div class="stat"><div class="muted">بروتين هدف</div><div id="targetP">0 g</div></div>
+          <div class="stat"><div class="muted">بروتين مستهلك</div><div id="consumedP">0 g</div></div>
+          <div class="bar"><i id="pBar" style="width:0%"></i></div>
+
+          <div class="stat"><div class="muted">كارب هدف</div><div id="targetC">0 g</div></div>
+          <div class="stat"><div class="muted">كارب مستهلك</div><div id="consumedC">0 g</div></div>
+          <div class="bar"><i id="cBar" style="width:0%"></i></div>
+
+          <div class="stat"><div class="muted">دهون هدف</div><div id="targetF">0 g</div></div>
+          <div class="stat"><div class="muted">دهون مستهلك</div><div id="consumedF">0 g</div></div>
+          <div class="bar"><i id="fBar" style="width:0%"></i></div>
+
+          <hr style="margin:10px 0;border:none;border-top:1px solid rgba(0,0,0,0.04)">
+
+          <div class="stat"><div class="muted">باقي سعرات</div><div id="leftKcal">0 kcal</div></div>
+          <div class="stat"><div class="muted">باقي بروتين</div><div id="leftP">0 g</div></div>
+          <div class="stat"><div class="muted">باقي كارب</div><div id="leftC">0 g</div></div>
+          <div class="stat"><div class="muted">باقي دهون</div><div id="leftF">0 g</div></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <div class="small-note">البيانات تحفظ محليًا بالمتصفح. للتعديل غيّر الأرقام أعلى اليمين.</div>
+      <div class="small-note">صمم بلونين: أبيض وأسود — تقدر تغير الأهداف بأي وقت.</div>
+    </footer>
+  </div>
+
+  <script>
+    // عناصر
+    const dailyCalories = document.getElementById('dailyCalories');
+    const dailyProtein = document.getElementById('dailyProtein');
+    const dailyCarb = document.getElementById('dailyCarb');
+    const dailyFat = document.getElementById('dailyFat');
+
+    const mealName = document.getElementById('mealName');
+    const mealNote = document.getElementById('mealNote');
+    const mealKcal = document.getElementById('mealKcal');
+    const mealProtein = document.getElementById('mealProtein');
+    const mealCarb = document.getElementById('mealCarb');
+    const mealFat = document.getElementById('mealFat');
+
+    const addMeal = document.getElementById('addMeal');
+    const quickCalc = document.getElementById('quickCalc');
+    const mealsList = document.getElementById('mealsList');
+
+    const targetKcal = document.getElementById('targetKcal');
+    const consumedKcal = document.getElementById('consumedKcal');
+    const kcalBar = document.getElementById('kcalBar');
+
+    const targetP = document.getElementById('targetP');
+    const consumedP = document.getElementById('consumedP');
+    const pBar = document.getElementById('pBar');
+
+    const targetC = document.getElementById('targetC');
+    const consumedC = document.getElementById('consumedC');
+    const cBar = document.getElementById('cBar');
+
+    const targetF = document.getElementById('targetF');
+    const consumedF = document.getElementById('consumedF');
+    const fBar = document.getElementById('fBar');
+
+    const leftKcal = document.getElementById('leftKcal');
+    const leftP = document.getElementById('leftP');
+    const leftC = document.getElementById('leftC');
+    const leftF = document.getElementById('leftF');
+
+    const resetBtn = document.getElementById('resetBtn');
+
+    // حالة
+    let meals = JSON.parse(localStorage.getItem('meals_v1') || '[]');
+
+    function save(){
+      localStorage.setItem('meals_v1', JSON.stringify(meals));
+    }
+
+    function calcTotals(){
+      const totals = meals.reduce((acc,m)=>(acc.kcal+=Number(m.kcal||0),acc.p+=Number(m.p||0),acc.c+=Number(m.c||0),acc.f+=Number(m.f||0),acc),{kcal:0,p:0,c:0,f:0});
+      return totals;
+    }
+
+    function renderMeals(){
+      mealsList.innerHTML = '';
+      const totals = calcTotals();
+      meals.forEach((m,i)=>{
+        const el = document.createElement('div'); el.className='meal';
+        el.innerHTML = `<div class="meta"><div><strong>${escapeHtml(m.name||'بدون اسم')}</strong><div class="muted">${escapeHtml(m.note||'')}</div></div></div><div style=\"display:flex;gap:12px;align-items:center\"><div class=\"kcal\">${m.kcal||0} kcal</div><div class=\"muted\">P:${m.p||0}g C:${m.c||0}g F:${m.f||0}g</div><div class=\"trash\" data-i=\"${i}\">🗑</div></div>`;
+        mealsList.appendChild(el);
+      });
+
+      // attach deletes
+      document.querySelectorAll('.trash').forEach(btn=>btn.addEventListener('click',e=>{
+        const i = Number(e.currentTarget.dataset.i); meals.splice(i,1); save(); render();
+      }))
+
+      // update summary
+      updateSummary(totals);
+    }
+
+    function updateSummary(totals){
+      const tK = Number(dailyCalories.value||0);
+      const tP = Number(dailyProtein.value||0);
+      const tC = Number(dailyCarb.value||0);
+      const tF = Number(dailyFat.value||0);
+
+      targetKcal.textContent = tK + ' kcal';
+      consumedKcal.textContent = totals.kcal + ' kcal';
+      const kcalPct = tK? Math.min(100, Math.round(totals.kcal / tK * 100)) : 0;
+      kcalBar.style.width = kcalPct + '%';
+
+      targetP.textContent = tP + ' g';
+      consumedP.textContent = totals.p + ' g';
+      pBar.style.width = tP? Math.min(100, Math.round(totals.p / tP * 100)) + '%' : '0%';
+
+      targetC.textContent = tC + ' g';
+      consumedC.textContent = totals.c + ' g';
+      cBar.style.width = tC? Math.min(100, Math.round(totals.c / tC * 100)) + '%' : '0%';
+
+      targetF.textContent = tF + ' g';
+      consumedF.textContent = totals.f + ' g';
+      fBar.style.width = tF? Math.min(100, Math.round(totals.f / tF * 100)) + '%' : '0%';
+
+      leftKcal.textContent = (tK - totals.kcal) + ' kcal';
+      leftP.textContent = (tP - totals.p) + ' g';
+      leftC.textContent = (tC - totals.c) + ' g';
+      leftF.textContent = (tF - totals.f) + ' g';
+
+      // small color tweak: if negative, make it bold
+      [leftKcal,leftP,leftC,leftF].forEach(el=>{
+        if(Number(el.textContent.split(' ')[0]) < 0) el.style.color='red'; else el.style.color='inherit';
+      })
+
+      // persist targets
+      localStorage.setItem('targets_v1', JSON.stringify({k:tK,p:tP,c:tC,f:tF}));
+    }
+
+    function addMealHandler(){
+      const m = {
+        name: mealName.value.trim(),
+        note: mealNote.value.trim(),
+        kcal: Number(mealKcal.value) || 0,
+        p: Number(mealProtein.value) || 0,
+        c: Number(mealCarb.value) || 0,
+        f: Number(mealFat.value) || 0,
+        created: Date.now()
+      };
+      meals.push(m); save(); render(); clearForm();
+    }
+
+    function clearForm(){ mealName.value=''; mealNote.value=''; mealKcal.value=''; mealProtein.value=''; mealCarb.value=''; mealFat.value=''; }
+
+    function render(){ renderMeals(); }
+
+    function escapeHtml(text){ return String(text).replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s])); }
+
+    quickCalc.addEventListener('click', ()=>{
+      // if user filled macros but not kcal, calculate kcal
+      const p = Number(mealProtein.value||0);
+      const c = Number(mealCarb.value||0);
+      const f = Number(mealFat.value||0);
+      const calc = p*4 + c*4 + f*9;
+      mealKcal.value = calc || mealKcal.value;
+      // show a small flash by changing button text
+      quickCalc.textContent = 'تم حساب السعرات من الماكروز';
+      setTimeout(()=> quickCalc.textContent = 'حساب من الماكروز',1200);
+    });
+
+    addMeal.addEventListener('click', addMealHandler);
+
+    function load(){
+      const saved = JSON.parse(localStorage.getItem('targets_v1') || 'null');
+      if(saved){ dailyCalories.value = saved.k || dailyCalories.value; dailyProtein.value = saved.p || dailyProtein.value; dailyCarb.value = saved.c || dailyCarb.value; dailyFat.value = saved.f || dailyFat.value; }
+      render();
+    }
+
+    // listen to target changes
+    [dailyCalories,dailyProtein,dailyCarb,dailyFat].forEach(inp=>inp.addEventListener('input', ()=> updateSummary(calcTotals())));
+
+    resetBtn.addEventListener('click', ()=>{
+      if(confirm('هل تريد مسح جميع الوجبات؟')){ meals=[]; save(); render(); }
+    });
+
+    // init
+    load();
+
+    // if no meals loaded, try to load from localstorage
+    if(localStorage.getItem('meals_v1')) meals = JSON.parse(localStorage.getItem('meals_v1'));
+    render();
+  </script>
+</body>
+</html>
